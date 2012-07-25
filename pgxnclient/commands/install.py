@@ -127,6 +127,9 @@ class InstallUninstall(WithMake, WithSpecLocal, Command):
             raise PgxnClientException(
                 _("configure failed with return code %s") % p.returncode)
 
+    def get_make(self):
+        return self.opts.make
+
 
 class SudoInstallUninstall(WithSudo, InstallUninstall):
     """
@@ -176,10 +179,10 @@ class Install(SudoInstallUninstall):
 
     def _inun(self, pdir):
         logger.info(_("building extension"))
-        self.run_make('all', dir=pdir)
+        self.run_make('all', dir=pdir, make=self.get_make())
 
         logger.info(_("installing extension"))
-        self.run_make('install', dir=pdir, sudo=self.get_sudo_prog())
+        self.run_make('install', dir=pdir, sudo=self.get_sudo_prog(), make=self.get_make())
 
 
 class Uninstall(SudoInstallUninstall):
@@ -188,7 +191,7 @@ class Uninstall(SudoInstallUninstall):
 
     def _inun(self, pdir):
         logger.info(_("removing extension"))
-        self.run_make('uninstall', dir=pdir, sudo=self.get_sudo_prog())
+        self.run_make('uninstall', dir=pdir, sudo=self.get_sudo_prog(), make=self.get_make())
 
 
 class Check(WithDatabase, InstallUninstall):
@@ -207,7 +210,7 @@ class Check(WithDatabase, InstallUninstall):
             cmd.append("CONTRIB_TESTDB=" +  env['PGDATABASE'])
 
         try:
-            self.run_make(cmd, dir=pdir, env=env)
+            self.run_make(cmd, dir=pdir, env=env, make=self.get_make())
         except PgxnClientException:
             # if the test failed, copy locally the regression result
             for ext in ('out', 'diffs'):

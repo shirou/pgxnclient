@@ -500,7 +500,18 @@ class WithMake(WithPgConfig, WithUnpacking):
     """
     Mixin to implement commands that should invoke :program:`make`.
     """
-    def run_make(self, cmd, dir, env=None, sudo=None):
+    @classmethod
+    def customize_parser(self, parser, subparsers, **kwargs):
+        subp = super(WithMake, self).customize_parser(
+            parser, subparsers, **kwargs)
+
+        g = subp.add_mutually_exclusive_group()
+        g.add_argument('--make', metavar="PROG", const='make', nargs="?",
+            help = _("use specific make (ex: gmake) [default: %(const)s]"))
+
+        return subp
+
+    def run_make(self, cmd, dir, env=None, sudo=None, make=None):
         """Invoke make with the selected command.
 
         :param cmd: the make target or list of options to pass make
@@ -522,7 +533,12 @@ class WithMake(WithPgConfig, WithUnpacking):
         if sudo:
             cmdline.extend(shlex.split(sudo))
 
-        cmdline.extend(['make', 'PG_CONFIG=%s' % self.get_pg_config()])
+        if make:
+            cmdline.extend([make])
+        else:
+            cmdline.extend(['make'])
+
+        cmdline.extend(['PG_CONFIG=%s' % self.get_pg_config()])
 
         if isinstance(cmd, basestring):
             cmdline.append(cmd)
